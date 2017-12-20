@@ -243,7 +243,7 @@ static void VS_CC mxdncnnCreate(const VSMap *in, VSMap *out, void *userData, VSC
 		const std::string pluginPath{ vsapi->getPluginPath(vsapi->getPluginById("com.kice.mxDncnn", core)) };
 		std::string dataPath{ pluginPath.substr(0, pluginPath.find_last_of('/')) };
 
-		std::string model = dataPath + "/dncnn/DnCNN-symbol.json";
+		std::string modelPath = dataPath + "/dncnn/DnCNN-symbol.json";
 
 		auto paramPath = dataPath;
 		if (param == 0)
@@ -251,8 +251,7 @@ static void VS_CC mxdncnnCreate(const VSMap *in, VSMap *out, void *userData, VSC
 		else
 			paramPath += "/dncnn/DnCNN" + std::to_string(param) + "-0000.params";
 
-		std::string json_file = "DnCNN-symbol.json";
-		BufferFile json_data(json_file);
+		BufferFile json_data(modelPath);
 		BufferFile param_data(paramPath);
 
 		d.hPred = 0;
