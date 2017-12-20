@@ -124,16 +124,17 @@ static int process(const VSFrameRef *src, VSFrameRef *dst, mxnetData * VS_RESTRI
 		return 2;
 	}
 
+	unsigned offset = 0;
 	for (unsigned i = 0; i < (unsigned)d->vi.format->numPlanes; ++i) {
 		const unsigned stride = vsapi->getStride(dst, i) / sizeof(float);
 		float * VS_RESTRICT dstp = reinterpret_cast<float *>(vsapi->getWritePtr(dst, i));
 
 		for (unsigned y = 0; y < height; y++) {
-			std::copy(d->dstBuffer, d->dstBuffer + width * sizeof(float), dstp);
-		}
+			memcpy(dstp, d->dstBuffer + offset, width * sizeof(float));
 
-		dstp += stride;
-		d->dstBuffer += height;
+			dstp += stride;
+			offset += width;
+		}
 	}
 
 	return 0;
@@ -231,14 +232,14 @@ static void VS_CC mxdncnnCreate(const VSMap *in, VSMap *out, void *userData, VSC
 		if (dev_id < 0)
 			throw std::string{ "device id must be greater than or equal to 0" };
 
-		if (d.vi.format->colorFamily == cmYUV) {
-			d.srcBuffer = new (std::nothrow) float[d.vi.width * d.vi.height * 3];
-			d.dstBuffer = new (std::nothrow) float[d.vi.width * d.vi.height * 3];
-			if (!d.srcBuffer || !d.dstBuffer)
-				throw std::string{ "malloc failure (buffer)" };
-		} else {
-			throw std::string{ "only support YUV444" };
+		if (d.vi.format->colorFamily != cmYUV || d.vi.format->numPlanes != 3 || d.vi.format->subSamplingH || d.vi.format->subSamplingW) {
+			throw std::string{ "only support YUV444 32-bit Float" };
 		}
+
+		d.srcBuffer = new (std::nothrow) float[d.vi.width * d.vi.height * 3];
+		d.dstBuffer = new (std::nothrow) float[d.vi.width * d.vi.height * 3];
+		if (!d.srcBuffer || !d.dstBuffer)
+			throw std::string{ "malloc failure (buffer)" };
 
 		const std::string pluginPath{ vsapi->getPluginPath(vsapi->getPluginById("com.kice.mxDncnn", core)) };
 		std::string dataPath{ pluginPath.substr(0, pluginPath.find_last_of('/')) };
