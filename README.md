@@ -11,11 +11,17 @@ Require mxnet version 1.0 (You can donwload this plugin from [Here](https://gith
     noise = mx.mxDNCNN(clip, [int patch_w=clip.width, int patch_h=clip.height, int param=88, int ctx=1, int dev_id=0])
     
     res = std.core.MakeDiff(clip, noise)
+    
+    # For multi-GPU processing (scales almost linearly)
+    even = core.mx.mxDNCNN(core.std.SelectEvery(clip, 2, 0), ctx=2, dev_id=0)
+    odd = core.mx.mxDNCNN(core.std.SelectEvery(clip, 2, 1), ctx=2, dev_id=1)
+
+    res = core.std.Interleave([even, odd])
 
 * clip: Clip to process. Only planar format is YUV with float sample type of 32 bit depth is supported.
 
 * patch_w: The horizontal block size for dividing the image during processing. Smaller value results in lower VRAM usage, while larger value may not necessarily give faster speed. The optimal value may vary according to different graphics card and image size. **NOT SUPPORT NOW**
-> **NOT SUPPORT NOW** Right now the plugin will use the entire image without spliting to process. Due the fact MXNet does not take a lot of GPU memory, it will take around 2G GPU memory for 1440x960 processing.
+> **NOT SUPPORT NOW** Right now the plugin will use the entire image without spliting to process. Due the fact MXNet does not take a lot of GPU memory, it will take around 1.5G GPU memory for 1920x1080 processing.
 
 * patch_h: The same as `patch_w` but for vertical. **NOT SUPPORT NOW**
 
